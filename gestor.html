@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Portal do Gestor - Proati</title>
+    <title>Chamado Proati</title>
     
     <!-- Importando o Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -52,15 +52,25 @@
 <body class="p-4 md:p-8">
 
     <div class="max-w-6xl mx-auto">
+        <!-- 1. TÍTULO ALTERADO AQUI -->
         <header class="bg-white rounded-xl shadow-md p-6 mb-6 flex flex-col md:flex-row justify-between items-center">
             <div>
-                <h1 class="text-3xl font-bold text-gray-800"><i class="fa-solid fa-chart-line text-blue-600 mr-2"></i>Painel do Gestor</h1>
+                <h1 class="text-3xl font-bold text-gray-800"><i class="fa-solid fa-chart-line text-blue-600 mr-2"></i>Chamado Proati</h1>
                 <p class="text-gray-500 mt-1">Gestão de Demandas de Equipamentos e Suporte</p>
             </div>
             <button onclick="carregarChamados()" class="mt-4 md:mt-0 bg-blue-100 hover:bg-blue-200 text-blue-700 font-semibold py-2 px-4 rounded-lg transition duration-200 flex items-center">
                 <i class="fa-solid fa-rotate-right mr-2"></i> Atualizar Dados
             </button>
         </header>
+
+        <!-- 2. CAMPO DE PESQUISA (LUPA) INSERIDO AQUI -->
+        <div class="mb-6 relative">
+            <div class="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none">
+                <i class="fa-solid fa-magnifying-glass text-gray-400"></i>
+            </div>
+            <!-- O onkeyup chama a função desenharTela() cada vez que uma tecla é solta -->
+            <input type="text" id="input-pesquisa" onkeyup="desenharTela()" class="w-full bg-white border border-gray-300 text-gray-800 text-md rounded-xl focus:ring-blue-500 focus:border-blue-500 block pl-11 p-4 shadow-sm transition" placeholder="Procurar pelo número do chamado (Ex: PRO-1001)...">
+        </div>
 
         <div class="flex space-x-1 mb-6 border-b border-gray-300 pb-0 overflow-x-auto">
             <button id="btn-aba-pendentes" onclick="mudarAba('Pendentes')" class="aba-ativa px-5 py-3 rounded-t-lg font-bold transition whitespace-nowrap flex items-center">
@@ -85,8 +95,8 @@
         
         <div id="mensagem-vazia" class="text-center py-12 hidden fade-in bg-white rounded-xl shadow-md p-8 border-t-4 border-gray-200">
             <i class="fa-regular fa-folder-open text-6xl text-gray-300 mb-4"></i>
-            <h2 class="text-2xl font-bold text-gray-600">Nenhum chamado nesta aba.</h2>
-            <p class="text-gray-500 mt-2">Os registros aparecerão aqui conforme as atualizações de status.</p>
+            <h2 class="text-2xl font-bold text-gray-600">Nenhum chamado encontrado.</h2>
+            <p class="text-gray-500 mt-2">Os registros aparecerão aqui conforme as atualizações ou termos de pesquisa.</p>
         </div>
     </div>
 
@@ -148,7 +158,8 @@
                 }
             });
 
-            // Redesenha a tela apenas com os chamados daquela aba
+            // Toda vez que muda a aba, limpar o campo de pesquisa e desenhar a tela
+            document.getElementById("input-pesquisa").value = "";
             desenharTela();
         }
 
@@ -183,12 +194,17 @@
                 });
         }
 
+        // 3. LÓGICA DE FILTRAGEM ATUALIZADA AQUI
         function desenharTela() {
             const grid = document.getElementById("grid-chamados");
             const msgVazia = document.getElementById("mensagem-vazia");
+            
+            // Pega o que está escrito no input de pesquisa e converte para minúsculas
+            const termoBusca = document.getElementById("input-pesquisa").value.toLowerCase().trim();
+            
             grid.innerHTML = "";
 
-            // Filtra os chamados de acordo com a aba selecionada
+            // Primeiro: Filtra os chamados de acordo com a aba selecionada
             let chamadosFiltrados = [];
             
             if (abaAtiva === 'Pendentes') {
@@ -197,6 +213,14 @@
                 chamadosFiltrados = todosOsChamadosDaPlanilha.filter(c => c['Status'] === 'Concluído');
             } else if (abaAtiva === 'Descartados') {
                 chamadosFiltrados = todosOsChamadosDaPlanilha.filter(c => c['Status'] === 'Descartado');
+            }
+
+            // Segundo: Se o gestor digitou algo na lupa, aplica um novo filtro
+            if (termoBusca !== "") {
+                chamadosFiltrados = chamadosFiltrados.filter(c => {
+                    const numeroChamado = c['Nº Chamado'] ? c['Nº Chamado'].toLowerCase() : '';
+                    return numeroChamado.includes(termoBusca);
+                });
             }
 
             // Exibe mensagem vazia ou gera os cards
