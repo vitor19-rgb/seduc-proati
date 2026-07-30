@@ -3,31 +3,37 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Portal Proati - Demo</title>
+    <title>Portal Proati - Estagiário</title>
     
-    <!-- Importando o Tailwind CSS para estilização rápida e moderna -->
+    <!-- Importando Tailwind CSS para estilo -->
     <script src="https://cdn.tailwindcss.com"></script>
-    
-    <!-- Importando a fonte Inter do Google Fonts para melhor legibilidade -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <!-- Importando ícones do FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <style>
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #f3f4f6; /* Fundo cinza claro */
+            background-color: #f3f4f6;
         }
-        /* Animação para quando as telas aparecem */
         .fade-in {
-            animation: fadeIn 0.5s ease-in-out;
+            animation: fadeIn 0.4s ease-in-out;
         }
         @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(-10px); }
+            from { opacity: 0; transform: translateY(10px); }
             to { opacity: 1; transform: translateY(0); }
         }
-        /* Esconde elementos nativamente */
-        .oculto {
-            display: none !important;
+        /* Efeito de carregamento para a busca de chamados */
+        .loader {
+            border: 4px solid #e5e7eb;
+            border-top: 4px solid #3b82f6;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
         }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body class="flex items-center justify-center min-h-screen p-4">
@@ -35,6 +41,9 @@
     <!-- TELA DE IDENTIFICAÇÃO -->
     <div id="tela-login" class="bg-white p-8 rounded-xl shadow-lg w-full max-w-md fade-in">
         <div class="text-center mb-6">
+            <div class="bg-blue-100 text-blue-600 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-3">
+                <i class="fa-solid fa-laptop-code text-2xl"></i>
+            </div>
             <h2 class="text-2xl font-bold text-gray-800">Portal Proati</h2>
             <p class="text-gray-500 text-sm mt-1">Identifique-se para acessar o sistema</p>
         </div>
@@ -42,14 +51,20 @@
         <div class="space-y-4">
             <div>
                 <label class="block text-sm font-semibold text-gray-700 mb-1">Seu Nome (Solicitante):</label>
-                <input type="text" id="input-nome" placeholder="Ex: Vitor Rafael" 
-                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                <div class="relative">
+                    <i class="fa-regular fa-user absolute left-3 top-3 text-gray-400"></i>
+                    <input type="text" id="input-nome" placeholder="Ex: Vitor Rafael" 
+                           class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                </div>
             </div>
             
             <div>
                 <label class="block text-sm font-semibold text-gray-700 mb-1">Nome da Escola:</label>
-                <input type="text" id="input-escola" placeholder="Ex: E.E. Darcy Pereira" 
-                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                <div class="relative">
+                    <i class="fa-solid fa-school absolute left-3 top-3 text-gray-400"></i>
+                    <input type="text" id="input-escola" placeholder="Ex: E.E. Darcy Pereira" 
+                           class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                </div>
             </div>
             
             <div>
@@ -60,79 +75,110 @@
                 </select>
             </div>
 
-            <!-- Caixa de mensagem de erro para o login -->
-            <p id="erro-login" class="text-red-500 text-sm font-semibold text-center oculto"></p>
+            <p id="erro-login" class="text-red-500 text-sm font-semibold text-center hidden"></p>
             
-            <button onclick="fazerLogin()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg transition duration-200 shadow-md">
-                Acessar Portal
+            <button onclick="fazerLogin()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg transition duration-200 shadow-md flex items-center justify-center">
+                Acessar Portal <i class="fa-solid fa-arrow-right ml-2"></i>
             </button>
         </div>
     </div>
 
     <!-- TELA DE CHAMADOS (Suporte Técnico) -->
-    <div id="tela-suporte" class="bg-white p-8 rounded-xl shadow-lg w-full max-w-md oculto fade-in">
-        <div class="border-b pb-4 mb-4">
-            <h2 class="text-xl font-bold text-gray-800">Suporte Técnico</h2>
-            <p class="text-sm text-gray-600 mt-2">
-                Olá, <span id="nome-usuario-display" class="font-bold text-blue-600"></span>!<br>
-                Escola: <span id="escola-usuario-display" class="font-semibold text-gray-800"></span>
-            </p>
+    <div id="tela-suporte" class="bg-white p-6 md:p-8 rounded-xl shadow-lg w-full max-w-lg hidden fade-in">
+        <div class="border-b pb-4 mb-4 flex justify-between items-start">
+            <div>
+                <h2 class="text-xl font-bold text-gray-800">Abertura de Chamado</h2>
+                <p class="text-sm text-gray-600 mt-1">
+                    Olá, <span id="nome-usuario-display" class="font-bold text-blue-600"></span>!
+                </p>
+                <p class="text-sm text-gray-600"><i class="fa-solid fa-location-dot text-gray-400 mr-1"></i> <span id="escola-usuario-display" class="font-semibold text-gray-800"></span></p>
+            </div>
+            <button onclick="abrirMeusChamados()" class="bg-gray-100 hover:bg-gray-200 text-blue-700 font-bold py-2 px-3 rounded-lg text-sm transition duration-200 flex items-center">
+                <i class="fa-solid fa-list-check mr-2"></i> Histórico
+            </button>
         </div>
         
         <div class="space-y-4">
+            <div class="bg-blue-50 border-l-4 border-blue-500 p-3 rounded text-sm text-blue-800 mb-4">
+                Descreva com detalhes o equipamento (modelo/série) e o problema identificado na escola.
+            </div>
+
             <div>
-                <label class="block text-sm font-semibold text-gray-700 mb-1">Descreva a Demanda (Equipamento / Problema):</label>
-                <textarea id="input-demanda" rows="4" placeholder="Ex: A escola tem 4 notebooks para formatar..." 
+                <label class="block text-sm font-semibold text-gray-700 mb-1">Descrição da Demanda:</label>
+                <textarea id="input-demanda" rows="4" placeholder="Ex: A escola tem 4 notebooks (série XYZ) para formatar..." 
                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none resize-none"></textarea>
             </div>
             
-            <!-- Caixa para mostrar mensagens de envio (sucesso ou erro) -->
-            <p id="mensagem-status" class="text-sm font-semibold text-center mt-2 h-5"></p>
+            <p id="mensagem-status" class="text-sm font-semibold text-center mt-2 h-5 transition-all"></p>
             
             <button onclick="enviarChamado()" id="btn-enviar" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-lg transition duration-200 shadow-md">
-                Enviar Chamado
+                <i class="fa-solid fa-paper-plane mr-2"></i> Enviar Chamado
             </button>
             
-            <button onclick="sair()" class="w-full bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-2 rounded-lg transition duration-200 mt-2">
+            <button onclick="sair()" class="w-full bg-transparent hover:bg-gray-100 text-gray-500 font-bold py-2 rounded-lg transition duration-200 mt-2 text-sm border border-gray-200">
                 Sair / Trocar de Escola
             </button>
         </div>
     </div>
 
+    <!-- TELA MEUS CHAMADOS (Histórico e Devolutivas) -->
+    <div id="tela-historico" class="bg-white p-6 md:p-8 rounded-xl shadow-lg w-full max-w-2xl hidden fade-in">
+        <div class="flex justify-between items-center border-b pb-4 mb-4">
+            <h2 class="text-xl font-bold text-gray-800"><i class="fa-solid fa-clock-rotate-left text-blue-600 mr-2"></i>Meus Chamados</h2>
+            <button onclick="voltarParaSuporte()" class="text-gray-500 hover:text-gray-800 font-bold text-sm flex items-center transition">
+                <i class="fa-solid fa-arrow-left mr-1"></i> Voltar
+            </button>
+        </div>
+
+        <div id="loading-historico" class="text-center py-8">
+            <div class="loader mb-3"></div>
+            <p class="text-gray-500 text-sm font-semibold">Buscando histórico na planilha...</p>
+        </div>
+
+        <div id="lista-historico" class="space-y-4 max-h-[60vh] overflow-y-auto pr-2 hidden">
+            <!-- Os cards do histórico serão criados via JS aqui -->
+        </div>
+
+        <div id="msg-historico-vazio" class="text-center py-8 hidden">
+            <div class="bg-gray-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-3">
+                <i class="fa-solid fa-inbox text-2xl text-gray-400"></i>
+            </div>
+            <h3 class="font-bold text-gray-700">Nenhum chamado encontrado.</h3>
+            <p class="text-gray-500 text-sm">Você ainda não abriu chamados nesta escola.</p>
+        </div>
+    </div>
+
     <script>
         // --- CONFIGURAÇÕES ---
-        // Aqui está a sua chave exata do Google Apps Script
-        const URL_PLANILHA = "https://script.google.com/macros/s/AKfycbxUPvR40c1YP_iFp0trwNVWoRafhh6iYHH6FDYrKKTyhj3PosGqFdZOOiroj2XqQWhK/exec";
+        // A mesma URL da planilha configurada no painel do gestor
+        const URL_PLANILHA = "https://script.google.com/macros/s/AKfycbznkhYlQt1JuuxlkB0GAQ4-rOhJ3YEEEEAHG0lyg5KZ2jt7N9K94JlYBkESOiKq1hGh/exec";
 
-        // Executa assim que a página carrega
+        // Verifica o cache local ao carregar a página
         window.onload = function() {
             const nomeSalvo = localStorage.getItem("proati_nome");
             const escolaSalva = localStorage.getItem("proati_escola");
             
-            // Se já tiver dados salvos no navegador, pula a tela de login
             if(nomeSalvo && escolaSalva) {
                 mostrarTelaSuporte(nomeSalvo, escolaSalva);
             }
         }
 
-        // Função de Identificação (Soft Login)
+        // --- SISTEMA DE LOGIN (SOFT LOGIN) ---
         function fazerLogin() {
             const nome = document.getElementById("input-nome").value.trim();
             const escola = document.getElementById("input-escola").value.trim();
             const turno = document.getElementById("input-turno").value;
             const erroMsg = document.getElementById("erro-login");
 
-            // Validação visual (sem alertas nativos)
             if(nome === "" || escola === "") {
                 erroMsg.innerText = "Por favor, preencha o seu nome e a escola.";
-                erroMsg.classList.remove("oculto");
+                erroMsg.classList.remove("hidden");
                 return;
             }
 
-            // Oculta mensagem de erro se estiver tudo certo
-            erroMsg.classList.add("oculto");
+            erroMsg.classList.add("hidden");
 
-            // Salva no navegador
+            // Salva dados no dispositivo
             localStorage.setItem("proati_nome", nome);
             localStorage.setItem("proati_escola", escola);
             localStorage.setItem("proati_turno", turno);
@@ -140,28 +186,32 @@
             mostrarTelaSuporte(nome, escola);
         }
 
-        // Troca a visibilidade das telas
+        // --- CONTROLE DE TELAS ---
         function mostrarTelaSuporte(nome, escola) {
-            document.getElementById("tela-login").classList.add("oculto");
-            document.getElementById("tela-suporte").classList.remove("oculto");
+            document.getElementById("tela-login").classList.add("hidden");
+            document.getElementById("tela-historico").classList.add("hidden");
+            document.getElementById("tela-suporte").classList.remove("hidden");
             
             document.getElementById("nome-usuario-display").innerText = nome;
             document.getElementById("escola-usuario-display").innerText = escola;
         }
 
-        // Função para limpar dados e voltar ao início
         function sair() {
             localStorage.clear();
             window.location.reload();
         }
 
-        // Gera um código único ex: PRO-1234
-        function gerarNumeroChamado() {
-            const numeroAleatorio = Math.floor(1000 + Math.random() * 9000);
-            return "PRO-" + numeroAleatorio;
+        function voltarParaSuporte() {
+            document.getElementById("tela-historico").classList.add("hidden");
+            document.getElementById("tela-suporte").classList.remove("hidden");
         }
 
-        // Função que empacota os dados e envia para a planilha
+        // --- ENVIO DE NOVO CHAMADO ---
+        function gerarNumeroChamado() {
+            const num = Math.floor(1000 + Math.random() * 9000);
+            return "PRO-" + num;
+        }
+
         function enviarChamado() {
             const demandaInput = document.getElementById("input-demanda");
             const demandaTexto = demandaInput.value.trim();
@@ -169,16 +219,14 @@
             const btnEnviar = document.getElementById("btn-enviar");
 
             if(demandaTexto === "") {
-                mensagemStatus.innerText = "Descreva a demanda antes de enviar.";
+                mensagemStatus.innerText = "⚠️ Descreva a demanda antes de enviar.";
                 mensagemStatus.className = "text-red-500 text-sm font-semibold text-center mt-2";
                 return;
             }
 
-            // Interface de "Carregando"
-            mensagemStatus.innerText = "Enviando chamado... aguarde.";
+            mensagemStatus.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Enviando chamado...';
             mensagemStatus.className = "text-blue-500 text-sm font-semibold text-center mt-2";
             btnEnviar.disabled = true;
-            btnEnviar.innerText = "Enviando...";
             btnEnviar.classList.add("opacity-50", "cursor-not-allowed");
 
             const dadosParaEnviar = {
@@ -189,37 +237,131 @@
                 numeroChamado: gerarNumeroChamado()
             };
 
-            // Comunicação com o Google Apps Script
             fetch(URL_PLANILHA, {
                 method: "POST",
                 body: JSON.stringify(dadosParaEnviar)
             })
-            .then(resposta => resposta.json())
+            .then(res => res.json())
             .then(dados => {
-                // Sucesso
-                mensagemStatus.innerText = `Chamado ${dadosParaEnviar.numeroChamado} aberto com sucesso!`;
+                mensagemStatus.innerHTML = `<i class="fa-solid fa-check-circle"></i> Chamado ${dadosParaEnviar.numeroChamado} aberto com sucesso!`;
                 mensagemStatus.className = "text-green-600 text-sm font-bold text-center mt-2";
-                demandaInput.value = ""; // Limpa o campo
+                demandaInput.value = ""; 
                 
-                // Restaura o botão após 3 segundos
                 setTimeout(() => {
                     mensagemStatus.innerText = "";
                     btnEnviar.disabled = false;
-                    btnEnviar.innerText = "Enviar Chamado";
                     btnEnviar.classList.remove("opacity-50", "cursor-not-allowed");
                 }, 4000);
             })
             .catch(erro => {
-                // Erro
-                console.error("Erro:", erro);
-                mensagemStatus.innerText = "Erro ao enviar. Verifique a conexão.";
+                mensagemStatus.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> Erro ao enviar. Verifique sua internet.`;
                 mensagemStatus.className = "text-red-600 text-sm font-bold text-center mt-2";
-                
-                // Restaura o botão
                 btnEnviar.disabled = false;
-                btnEnviar.innerText = "Tentar Novamente";
                 btnEnviar.classList.remove("opacity-50", "cursor-not-allowed");
             });
+        }
+
+        // --- BUSCA DO HISTÓRICO (MEUS CHAMADOS) ---
+        function abrirMeusChamados() {
+            // Alterna as telas
+            document.getElementById("tela-suporte").classList.add("hidden");
+            document.getElementById("tela-historico").classList.remove("hidden");
+            
+            const loading = document.getElementById("loading-historico");
+            const lista = document.getElementById("lista-historico");
+            const msgVazio = document.getElementById("msg-historico-vazio");
+
+            // Reset visual
+            loading.classList.remove("hidden");
+            lista.classList.add("hidden");
+            lista.innerHTML = "";
+            msgVazio.classList.add("hidden");
+
+            const meuNome = localStorage.getItem("proati_nome");
+            const minhaEscola = localStorage.getItem("proati_escola");
+
+            // Busca os dados da planilha
+            fetch(URL_PLANILHA)
+                .then(res => res.json())
+                .then(dados => {
+                    loading.classList.add("hidden");
+
+                    // Filtra apenas os chamados abertos por este estagiário nesta escola
+                    const meusChamados = dados.filter(chamado => {
+                        return chamado['Solicitante'] === meuNome && chamado['Nome da Escola'] === minhaEscola;
+                    });
+
+                    if (meusChamados.length === 0) {
+                        msgVazio.classList.remove("hidden");
+                        return;
+                    }
+
+                    // Renderiza a lista na tela, mostrando os mais recentes primeiro
+                    meusChamados.reverse().forEach(chamado => {
+                        lista.appendChild(criarCardHistorico(chamado));
+                    });
+                    
+                    lista.classList.remove("hidden");
+                })
+                .catch(erro => {
+                    loading.classList.add("hidden");
+                    alert("Erro ao buscar histórico. Tente novamente mais tarde.");
+                });
+        }
+
+        // --- CRIAÇÃO DOS CARDS DO HISTÓRICO ---
+        function criarCardHistorico(chamado) {
+            const card = document.createElement("div");
+            const status = chamado['Status'] || "Em Aberto";
+            const devolutiva = chamado['Devolutiva'] || "";
+            
+            // Define o design baseado no status
+            let corBorda = "border-blue-500";
+            let corBadge = "bg-blue-100 text-blue-800";
+            let iconeBadge = "fa-clock";
+            
+            if(status === "Concluído") {
+                corBorda = "border-green-500";
+                corBadge = "bg-green-100 text-green-800";
+                iconeBadge = "fa-check-circle";
+            } else if(status === "Descartado") {
+                corBorda = "border-gray-400";
+                corBadge = "bg-gray-100 text-gray-600";
+                iconeBadge = "fa-ban";
+            }
+
+            card.className = `bg-white border border-gray-200 border-l-4 ${corBorda} rounded-lg p-4 shadow-sm`;
+            
+            let htmlCard = `
+                <div class="flex justify-between items-center mb-2">
+                    <span class="font-bold text-gray-800">${chamado['Nº Chamado']}</span>
+                    <span class="text-xs font-bold px-2 py-1 rounded-full ${corBadge}">
+                        <i class="fa-solid ${iconeBadge} mr-1"></i> ${status}
+                    </span>
+                </div>
+                <p class="text-sm text-gray-600 mb-3 line-clamp-2">"${chamado['Demanda']}"</p>
+            `;
+
+            // Se estiver concluído e o gestor tiver deixado uma mensagem (devolutiva), mostra aqui!
+            if(status === "Concluído" && devolutiva !== "") {
+                htmlCard += `
+                    <div class="bg-green-50 border border-green-200 rounded p-3 mt-2">
+                        <p class="text-xs font-bold text-green-800 mb-1"><i class="fa-solid fa-comment-dots"></i> Resposta do Gestor:</p>
+                        <p class="text-sm text-green-900 italic">${devolutiva}</p>
+                    </div>
+                `;
+            } else if (status === "Descartado" && devolutiva !== "") {
+                // Caso tenha cancelado com alguma justificativa
+                 htmlCard += `
+                    <div class="bg-gray-50 border border-gray-200 rounded p-3 mt-2">
+                        <p class="text-xs font-bold text-gray-700 mb-1"><i class="fa-solid fa-comment-dots"></i> Motivo do Descarte:</p>
+                        <p class="text-sm text-gray-700 italic">${devolutiva}</p>
+                    </div>
+                `;
+            }
+
+            card.innerHTML = htmlCard;
+            return card;
         }
     </script>
 </body>
