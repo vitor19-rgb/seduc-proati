@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portal Proati - Demo</title>
+    
+    <!-- Importando o Tailwind CSS para estilização rápida e moderna -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Importando a fonte Inter do Google Fonts para melhor legibilidade -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+    
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6; /* Fundo cinza claro */
+        }
+        /* Animação para quando as telas aparecem */
+        .fade-in {
+            animation: fadeIn 0.5s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        /* Esconde elementos nativamente */
+        .oculto {
+            display: none !important;
+        }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen p-4">
+
+    <!-- TELA DE IDENTIFICAÇÃO -->
+    <div id="tela-login" class="bg-white p-8 rounded-xl shadow-lg w-full max-w-md fade-in">
+        <div class="text-center mb-6">
+            <h2 class="text-2xl font-bold text-gray-800">Portal Proati</h2>
+            <p class="text-gray-500 text-sm mt-1">Identifique-se para acessar o sistema</p>
+        </div>
+        
+        <div class="space-y-4">
+            <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-1">Seu Nome (Solicitante):</label>
+                <input type="text" id="input-nome" placeholder="Ex: Vitor Rafael" 
+                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none">
+            </div>
+            
+            <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-1">Nome da Escola:</label>
+                <input type="text" id="input-escola" placeholder="Ex: E.E. Darcy Pereira" 
+                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none">
+            </div>
+            
+            <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-1">Turno:</label>
+                <select id="input-turno" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                    <option value="Manhã">Manhã</option>
+                    <option value="Tarde">Tarde</option>
+                </select>
+            </div>
+
+            <!-- Caixa de mensagem de erro para o login -->
+            <p id="erro-login" class="text-red-500 text-sm font-semibold text-center oculto"></p>
+            
+            <button onclick="fazerLogin()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg transition duration-200 shadow-md">
+                Acessar Portal
+            </button>
+        </div>
+    </div>
+
+    <!-- TELA DE CHAMADOS (Suporte Técnico) -->
+    <div id="tela-suporte" class="bg-white p-8 rounded-xl shadow-lg w-full max-w-md oculto fade-in">
+        <div class="border-b pb-4 mb-4">
+            <h2 class="text-xl font-bold text-gray-800">Suporte Técnico</h2>
+            <p class="text-sm text-gray-600 mt-2">
+                Olá, <span id="nome-usuario-display" class="font-bold text-blue-600"></span>!<br>
+                Escola: <span id="escola-usuario-display" class="font-semibold text-gray-800"></span>
+            </p>
+        </div>
+        
+        <div class="space-y-4">
+            <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-1">Descreva a Demanda (Equipamento / Problema):</label>
+                <textarea id="input-demanda" rows="4" placeholder="Ex: A escola tem 4 notebooks para formatar..." 
+                          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none resize-none"></textarea>
+            </div>
+            
+            <!-- Caixa para mostrar mensagens de envio (sucesso ou erro) -->
+            <p id="mensagem-status" class="text-sm font-semibold text-center mt-2 h-5"></p>
+            
+            <button onclick="enviarChamado()" id="btn-enviar" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-lg transition duration-200 shadow-md">
+                Enviar Chamado
+            </button>
+            
+            <button onclick="sair()" class="w-full bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-2 rounded-lg transition duration-200 mt-2">
+                Sair / Trocar de Escola
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // --- CONFIGURAÇÕES ---
+        // Aqui está a sua chave exata do Google Apps Script
+        const URL_PLANILHA = "https://script.google.com/macros/s/AKfycbxUPvR40c1YP_iFp0trwNVWoRafhh6iYHH6FDYrKKTyhj3PosGqFdZOOiroj2XqQWhK/exec";
+
+        // Executa assim que a página carrega
+        window.onload = function() {
+            const nomeSalvo = localStorage.getItem("proati_nome");
+            const escolaSalva = localStorage.getItem("proati_escola");
+            
+            // Se já tiver dados salvos no navegador, pula a tela de login
+            if(nomeSalvo && escolaSalva) {
+                mostrarTelaSuporte(nomeSalvo, escolaSalva);
+            }
+        }
+
+        // Função de Identificação (Soft Login)
+        function fazerLogin() {
+            const nome = document.getElementById("input-nome").value.trim();
+            const escola = document.getElementById("input-escola").value.trim();
+            const turno = document.getElementById("input-turno").value;
+            const erroMsg = document.getElementById("erro-login");
+
+            // Validação visual (sem alertas nativos)
+            if(nome === "" || escola === "") {
+                erroMsg.innerText = "Por favor, preencha o seu nome e a escola.";
+                erroMsg.classList.remove("oculto");
+                return;
+            }
+
+            // Oculta mensagem de erro se estiver tudo certo
+            erroMsg.classList.add("oculto");
+
+            // Salva no navegador
+            localStorage.setItem("proati_nome", nome);
+            localStorage.setItem("proati_escola", escola);
+            localStorage.setItem("proati_turno", turno);
+
+            mostrarTelaSuporte(nome, escola);
+        }
+
+        // Troca a visibilidade das telas
+        function mostrarTelaSuporte(nome, escola) {
+            document.getElementById("tela-login").classList.add("oculto");
+            document.getElementById("tela-suporte").classList.remove("oculto");
+            
+            document.getElementById("nome-usuario-display").innerText = nome;
+            document.getElementById("escola-usuario-display").innerText = escola;
+        }
+
+        // Função para limpar dados e voltar ao início
+        function sair() {
+            localStorage.clear();
+            window.location.reload();
+        }
+
+        // Gera um código único ex: PRO-1234
+        function gerarNumeroChamado() {
+            const numeroAleatorio = Math.floor(1000 + Math.random() * 9000);
+            return "PRO-" + numeroAleatorio;
+        }
+
+        // Função que empacota os dados e envia para a planilha
+        function enviarChamado() {
+            const demandaInput = document.getElementById("input-demanda");
+            const demandaTexto = demandaInput.value.trim();
+            const mensagemStatus = document.getElementById("mensagem-status");
+            const btnEnviar = document.getElementById("btn-enviar");
+
+            if(demandaTexto === "") {
+                mensagemStatus.innerText = "Descreva a demanda antes de enviar.";
+                mensagemStatus.className = "text-red-500 text-sm font-semibold text-center mt-2";
+                return;
+            }
+
+            // Interface de "Carregando"
+            mensagemStatus.innerText = "Enviando chamado... aguarde.";
+            mensagemStatus.className = "text-blue-500 text-sm font-semibold text-center mt-2";
+            btnEnviar.disabled = true;
+            btnEnviar.innerText = "Enviando...";
+            btnEnviar.classList.add("opacity-50", "cursor-not-allowed");
+
+            const dadosParaEnviar = {
+                escola: localStorage.getItem("proati_escola"),
+                solicitante: localStorage.getItem("proati_nome"),
+                demanda: demandaTexto,
+                status: "Em Aberto", 
+                numeroChamado: gerarNumeroChamado()
+            };
+
+            // Comunicação com o Google Apps Script
+            fetch(URL_PLANILHA, {
+                method: "POST",
+                body: JSON.stringify(dadosParaEnviar)
+            })
+            .then(resposta => resposta.json())
+            .then(dados => {
+                // Sucesso
+                mensagemStatus.innerText = `Chamado ${dadosParaEnviar.numeroChamado} aberto com sucesso!`;
+                mensagemStatus.className = "text-green-600 text-sm font-bold text-center mt-2";
+                demandaInput.value = ""; // Limpa o campo
+                
+                // Restaura o botão após 3 segundos
+                setTimeout(() => {
+                    mensagemStatus.innerText = "";
+                    btnEnviar.disabled = false;
+                    btnEnviar.innerText = "Enviar Chamado";
+                    btnEnviar.classList.remove("opacity-50", "cursor-not-allowed");
+                }, 4000);
+            })
+            .catch(erro => {
+                // Erro
+                console.error("Erro:", erro);
+                mensagemStatus.innerText = "Erro ao enviar. Verifique a conexão.";
+                mensagemStatus.className = "text-red-600 text-sm font-bold text-center mt-2";
+                
+                // Restaura o botão
+                btnEnviar.disabled = false;
+                btnEnviar.innerText = "Tentar Novamente";
+                btnEnviar.classList.remove("opacity-50", "cursor-not-allowed");
+            });
+        }
+    </script>
+</body>
+</html>

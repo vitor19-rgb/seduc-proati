@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portal do Gestor - Proati</title>
+    
+    <!-- Importando o Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #e5e7eb;
+        }
+        .fade-in {
+            animation: fadeIn 0.4s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3b82f6;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        
+        /* Estilos para as abas ativas/inativas */
+        .aba-ativa {
+            background-color: #3b82f6;
+            color: white;
+            border-bottom: 2px solid #2563eb;
+        }
+        .aba-inativa {
+            background-color: #f3f4f6;
+            color: #4b5563;
+            border-bottom: 2px solid transparent;
+        }
+        .aba-inativa:hover {
+            background-color: #e5e7eb;
+        }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+
+    <div class="max-w-6xl mx-auto">
+        <header class="bg-white rounded-xl shadow-md p-6 mb-6 flex flex-col md:flex-row justify-between items-center">
+            <div>
+                <h1 class="text-3xl font-bold text-gray-800"><i class="fa-solid fa-chart-line text-blue-600 mr-2"></i>Painel do Gestor</h1>
+                <p class="text-gray-500 mt-1">Gestão de Demandas de Equipamentos e Suporte</p>
+            </div>
+            <button onclick="carregarChamados()" class="mt-4 md:mt-0 bg-blue-100 hover:bg-blue-200 text-blue-700 font-semibold py-2 px-4 rounded-lg transition duration-200 flex items-center">
+                <i class="fa-solid fa-rotate-right mr-2"></i> Atualizar Dados
+            </button>
+        </header>
+
+        <div class="flex space-x-1 mb-6 border-b border-gray-300 pb-0 overflow-x-auto">
+            <button id="btn-aba-pendentes" onclick="mudarAba('Pendentes')" class="aba-ativa px-5 py-3 rounded-t-lg font-bold transition whitespace-nowrap flex items-center">
+                <i class="fa-regular fa-clock mr-2"></i> Pendentes
+            </button>
+            <button id="btn-aba-concluidos" onclick="mudarAba('Concluídos')" class="aba-inativa px-5 py-3 rounded-t-lg font-bold transition whitespace-nowrap flex items-center">
+                <i class="fa-solid fa-check-double mr-2"></i> Concluídos
+            </button>
+            <button id="btn-aba-descartados" onclick="mudarAba('Descartados')" class="aba-inativa px-5 py-3 rounded-t-lg font-bold transition whitespace-nowrap flex items-center">
+                <i class="fa-solid fa-trash-can mr-2"></i> Descartados
+            </button>
+        </div>
+
+        <div id="loading" class="text-center py-10 fade-in">
+            <div class="loader mb-4"></div>
+            <p class="text-gray-600 font-semibold text-lg">Sincronizando com a base de dados...</p>
+        </div>
+
+        <div id="grid-chamados" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 hidden">
+            <!-- Os cards injetados via JavaScript ficarão aqui -->
+        </div>
+        
+        <div id="mensagem-vazia" class="text-center py-12 hidden fade-in bg-white rounded-xl shadow-md p-8 border-t-4 border-gray-200">
+            <i class="fa-regular fa-folder-open text-6xl text-gray-300 mb-4"></i>
+            <h2 class="text-2xl font-bold text-gray-600">Nenhum chamado nesta aba.</h2>
+            <p class="text-gray-500 mt-2">Os registros aparecerão aqui conforme as atualizações de status.</p>
+        </div>
+    </div>
+
+    <!-- Modal Concluir -->
+    <div id="modal-concluir" class="fixed inset-0 bg-black bg-opacity-60 hidden items-center justify-center z-50 fade-in">
+        <div class="bg-white rounded-xl p-6 w-full max-w-md mx-4 shadow-2xl border-t-4 border-blue-500">
+            <h3 class="text-xl font-bold text-gray-800 mb-2"><i class="fa-solid fa-check-circle text-blue-500 mr-2"></i>Concluir Chamado</h3>
+            <p class="text-sm text-gray-600 mb-4">Chamado: <span id="span-concluir-numero" class="font-bold text-gray-800"></span></p>
+            
+            <label class="block text-sm font-bold text-gray-700 mb-2">Devolutiva (Obrigatório):</label>
+            <textarea id="texto-devolutiva" class="w-full border border-gray-300 rounded-lg p-3 text-sm focus:ring-blue-500 focus:border-blue-500 mb-4 resize-none" rows="4" placeholder="Ex: Notebook formatado e entregue na sala de leitura."></textarea>
+            
+            <div class="flex justify-end gap-3">
+                <button onclick="fecharModal('modal-concluir')" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg font-bold hover:bg-gray-300 transition">Cancelar</button>
+                <button onclick="confirmarConclusao()" id="btn-concluir" class="px-4 py-2 bg-blue-600 text-white rounded-lg font-bold hover:bg-blue-700 flex items-center transition">
+                    <i class="fa-solid fa-save mr-2"></i> Salvar e Concluir
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Apagar (Descartar) -->
+    <div id="modal-apagar" class="fixed inset-0 bg-black bg-opacity-60 hidden items-center justify-center z-50 fade-in">
+        <div class="bg-white rounded-xl p-6 w-full max-w-md mx-4 shadow-2xl text-center border-t-4 border-red-500">
+            <i class="fa-solid fa-triangle-exclamation text-5xl text-red-500 mb-4"></i>
+            <h3 class="text-xl font-bold text-gray-800 mb-2">Descartar Chamado?</h3>
+            <p class="text-sm text-gray-600 mb-6">O chamado <span id="span-apagar-numero" class="font-bold"></span> será movido para a aba "Descartados".</p>
+            
+            <div class="flex justify-center gap-3">
+                <button onclick="fecharModal('modal-apagar')" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg font-bold hover:bg-gray-300 transition">Cancelar</button>
+                <button onclick="confirmarApagar()" id="btn-apagar" class="px-4 py-2 bg-red-600 text-white rounded-lg font-bold hover:bg-red-700 flex items-center transition">
+                    <i class="fa-solid fa-trash mr-2"></i> Descartar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const URL_PLANILHA = "https://script.google.com/macros/s/AKfycbxUPvR40c1YP_iFp0trwNVWoRafhh6iYHH6FDYrKKTyhj3PosGqFdZOOiroj2XqQWhK/exec";
+        
+        let abaAtiva = 'Pendentes'; // Controla qual aba estamos vendo
+        let todosOsChamadosDaPlanilha = []; // Guarda todos os dados puxados da planilha
+
+        window.onload = function() {
+            carregarChamados();
+        }
+
+        function mudarAba(nomeAba) {
+            abaAtiva = nomeAba;
+            
+            // Atualiza visual dos botões
+            const abas = ['Pendentes', 'Concluídos', 'Descartados'];
+            abas.forEach(aba => {
+                const btn = document.getElementById(`btn-aba-${aba.toLowerCase().replace('í', 'i')}`);
+                if (aba === nomeAba) {
+                    btn.className = "aba-ativa px-5 py-3 rounded-t-lg font-bold transition whitespace-nowrap flex items-center";
+                } else {
+                    btn.className = "aba-inativa px-5 py-3 rounded-t-lg font-bold transition whitespace-nowrap flex items-center";
+                }
+            });
+
+            // Redesenha a tela apenas com os chamados daquela aba
+            desenharTela();
+        }
+
+        function carregarChamados() {
+            const loading = document.getElementById("loading");
+            const grid = document.getElementById("grid-chamados");
+            const msgVazia = document.getElementById("mensagem-vazia");
+
+            grid.classList.add("hidden");
+            msgVazia.classList.add("hidden");
+            loading.classList.remove("hidden");
+
+            fetch(URL_PLANILHA)
+                .then(resposta => resposta.json())
+                .then(dados => {
+                    loading.classList.add("hidden");
+                    
+                    if (dados.length === 0) {
+                        todosOsChamadosDaPlanilha = [];
+                        desenharTela();
+                        return;
+                    }
+
+                    // Salva os dados na memória (invertidos para mostrar o mais novo no topo)
+                    todosOsChamadosDaPlanilha = dados.reverse();
+                    desenharTela(); 
+                })
+                .catch(erro => {
+                    console.warn("Modo Demo Ativado", erro.message);
+                    loading.classList.add("hidden");
+                    renderizarDadosDeExemplo();
+                });
+        }
+
+        function desenharTela() {
+            const grid = document.getElementById("grid-chamados");
+            const msgVazia = document.getElementById("mensagem-vazia");
+            grid.innerHTML = "";
+
+            // Filtra os chamados de acordo com a aba selecionada
+            let chamadosFiltrados = [];
+            
+            if (abaAtiva === 'Pendentes') {
+                chamadosFiltrados = todosOsChamadosDaPlanilha.filter(c => c['Status'] === 'Em Aberto' || !c['Status']);
+            } else if (abaAtiva === 'Concluídos') {
+                chamadosFiltrados = todosOsChamadosDaPlanilha.filter(c => c['Status'] === 'Concluído');
+            } else if (abaAtiva === 'Descartados') {
+                chamadosFiltrados = todosOsChamadosDaPlanilha.filter(c => c['Status'] === 'Descartado');
+            }
+
+            // Exibe mensagem vazia ou gera os cards
+            if (chamadosFiltrados.length === 0) {
+                grid.classList.add("hidden");
+                msgVazia.classList.remove("hidden");
+            } else {
+                msgVazia.classList.add("hidden");
+                grid.classList.remove("hidden");
+                chamadosFiltrados.forEach((chamado, index) => {
+                    if(chamado['Nº Chamado'] && chamado['Nº Chamado'] !== "") {
+                        criarCardChamado(chamado, index);
+                    }
+                });
+            }
+        }
+
+        function criarCardChamado(chamado, idSelect) {
+            const grid = document.getElementById("grid-chamados");
+            const card = document.createElement("div");
+            
+            const numero = chamado['Nº Chamado'] || 'PRO-0000';
+            const escola = chamado['Nome da Escola'] || 'Não informada';
+            const solicitante = chamado['Solicitante'] || 'Anônimo';
+            const demanda = chamado['Demanda'] || 'Sem descrição';
+            const devolutiva = chamado['Devolutiva'] || '';
+            const status = chamado['Status'] || 'Em Aberto';
+
+            // Configurações de cores baseadas no status
+            let corBorda = "border-blue-500";
+            let tagStatus = `<span class="bg-blue-100 text-blue-800 text-xs font-bold px-2 py-1 rounded-full"><i class="fa-regular fa-clock"></i> Pendente</span>`;
+            let htmlBotoesAcao = '';
+            let htmlDevolutiva = '';
+
+            // Se for Pendente: Mostra WhatsApp, Concluir e Apagar
+            if (abaAtiva === 'Pendentes') {
+                htmlBotoesAcao = `
+                    <div class="mt-4 pt-4 border-t space-y-3">
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 mb-1">Definir Prioridade:</label>
+                            <select id="prioridade-${idSelect}" class="w-full bg-gray-50 border border-gray-300 text-gray-700 text-sm rounded-lg p-2 focus:ring-blue-500 focus:border-blue-500">
+                                <option value="Baixa 🟢">🟢 Baixa (Pode aguardar)</option>
+                                <option value="Média 🟡" selected>🟡 Média (Padrão)</option>
+                                <option value="Alta 🔴">🔴 Alta (Urgente)</option>
+                            </select>
+                        </div>
+                        <button onclick="enviarParaWhatsApp('${numero}', '${escola.replace(/'/g, "\\'")}', '${demanda.replace(/'/g, "\\'")}', '${idSelect}')" 
+                                class="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg flex justify-center items-center mb-3">
+                            <i class="fa-brands fa-whatsapp text-xl mr-2"></i> Analista Field
+                        </button>
+                        <div class="flex gap-2">
+                            <button onclick="abrirModalConcluir('${numero}')" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-3 rounded-lg flex justify-center items-center text-sm">
+                                <i class="fa-solid fa-check mr-1"></i> Concluir
+                            </button>
+                            <button onclick="abrirModalApagar('${numero}')" class="flex-1 bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-3 rounded-lg flex justify-center items-center text-sm">
+                                <i class="fa-solid fa-trash mr-1"></i> Descartar
+                            </button>
+                        </div>
+                    </div>`;
+            } 
+            // Se for Concluído: Mostra só a Devolutiva
+            else if (abaAtiva === 'Concluídos') {
+                corBorda = "border-green-500";
+                tagStatus = `<span class="bg-green-100 text-green-800 text-xs font-bold px-2 py-1 rounded-full"><i class="fa-solid fa-check-double"></i> Concluído</span>`;
+                htmlDevolutiva = `
+                    <div class="mt-4 pt-4 border-t">
+                        <p class="text-xs font-bold text-green-700 mb-1">Devolutiva do Gestor:</p>
+                        <div class="bg-green-50 p-3 rounded-lg border border-green-200 text-sm text-green-800">
+                            ${devolutiva}
+                        </div>
+                    </div>`;
+            }
+            // Se for Descartado: Mostra o aviso
+            else if (abaAtiva === 'Descartados') {
+                corBorda = "border-gray-500";
+                tagStatus = `<span class="bg-gray-200 text-gray-700 text-xs font-bold px-2 py-1 rounded-full"><i class="fa-solid fa-ban"></i> Descartado</span>`;
+                htmlDevolutiva = `
+                    <div class="mt-4 pt-4 border-t">
+                        <div class="bg-gray-100 p-3 rounded-lg border border-gray-200 text-sm text-gray-600 text-center italic">
+                            Chamado cancelado ou descartado pela gestão.
+                        </div>
+                    </div>`;
+            }
+
+            card.className = `bg-white rounded-xl shadow-lg border-t-4 ${corBorda} flex flex-col justify-between fade-in p-5`;
+            card.innerHTML = `
+                <div>
+                    <div class="flex justify-between items-center border-b pb-3 mb-3">
+                        <span class="font-bold text-gray-800 text-lg">${numero}</span>
+                        ${tagStatus}
+                    </div>
+                    <div class="mb-2">
+                        <p class="text-sm text-gray-500 mb-1"><i class="fa-solid fa-school w-5"></i> <span class="font-semibold text-gray-800">${escola}</span></p>
+                        <p class="text-sm text-gray-500 mb-2"><i class="fa-solid fa-user w-5"></i> ${solicitante}</p>
+                        <div class="bg-blue-50 p-3 rounded-lg border border-blue-100 mt-2">
+                            <p class="text-sm text-gray-700 italic">"${demanda}"</p>
+                        </div>
+                    </div>
+                </div>
+                ${htmlDevolutiva}
+                ${htmlBotoesAcao}
+            `;
+            grid.appendChild(card);
+        }
+
+        function enviarParaWhatsApp(numero, escola, demanda, idSelect) {
+            const selectElement = document.getElementById(`prioridade-${idSelect}`);
+            const prioridadeEscolhida = selectElement.value;
+            const textoMensagem = `*NOVO CHAMADO DE CAMPO - PROATI* 🚀\n\n*Chamado:* ${numero}\n*Escola:* ${escola}\n*Prioridade:* ${prioridadeEscolhida}\n\n*Relato:*\n"${demanda}"\n\nPor favor, verificar.`;
+            const urlWhatsApp = `https://api.whatsapp.com/send?text=${encodeURIComponent(textoMensagem)}`;
+            window.open(urlWhatsApp, '_blank');
+        }
+
+        let chamadoAtual = ""; 
+
+        function abrirModalConcluir(numero) {
+            chamadoAtual = numero;
+            document.getElementById('span-concluir-numero').innerText = numero;
+            document.getElementById('texto-devolutiva').value = "";
+            document.getElementById('modal-concluir').classList.replace('hidden', 'flex');
+        }
+
+        function abrirModalApagar(numero) {
+            chamadoAtual = numero;
+            document.getElementById('span-apagar-numero').innerText = numero;
+            document.getElementById('modal-apagar').classList.replace('hidden', 'flex');
+        }
+
+        function fecharModal(idModal) {
+            document.getElementById(idModal).classList.replace('flex', 'hidden');
+        }
+
+        function processarAcao(acao, devolutiva = "", idBotao) {
+            const btn = document.getElementById(idBotao);
+            const textoAntigo = btn.innerHTML;
+            btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-2"></i> Salvando...`;
+            btn.disabled = true;
+
+            const dadosParaEnviar = { acao: acao, numeroChamado: chamadoAtual, devolutiva: devolutiva };
+
+            fetch(URL_PLANILHA, { method: 'POST', body: JSON.stringify(dadosParaEnviar) })
+            .then(res => res.json())
+            .then(dados => {
+                fecharModal('modal-concluir');
+                fecharModal('modal-apagar');
+                btn.innerHTML = textoAntigo;
+                btn.disabled = false;
+                carregarChamados(); // Recarrega a planilha para atualizar as abas!
+            })
+            .catch(erro => {
+                console.error(erro);
+                alert("Erro de conexão. Verifique se o Google Apps Script está publicado como 'Nova versão'.");
+                fecharModal('modal-concluir');
+                fecharModal('modal-apagar');
+                btn.innerHTML = textoAntigo;
+                btn.disabled = false;
+            });
+        }
+
+        function confirmarConclusao() {
+            const devolutiva = document.getElementById('texto-devolutiva').value;
+            if(devolutiva.trim() === "") {
+                alert("Por favor, preencha a devolutiva para finalizar.");
+                return;
+            }
+            processarAcao("concluir", devolutiva, "btn-concluir");
+        }
+
+        function confirmarApagar() {
+            processarAcao("apagar", "", "btn-apagar");
+        }
+
+        function renderizarDadosDeExemplo() {
+            todosOsChamadosDaPlanilha = [
+                {'Nº Chamado': 'PRO-1001', 'Nome da Escola': 'Escola Teste Pendente', 'Solicitante': 'Estagiário A', 'Demanda': 'Problema na internet.', 'Status': 'Em Aberto', 'Devolutiva': ''},
+                {'Nº Chamado': 'PRO-2002', 'Nome da Escola': 'Escola Teste Concluído', 'Solicitante': 'Estagiário B', 'Demanda': 'Notebook não liga.', 'Status': 'Concluído', 'Devolutiva': 'Foi trocada a fonte do aparelho. Entregue na diretoria.'},
+                {'Nº Chamado': 'PRO-3003', 'Nome da Escola': 'Escola Teste Descartado', 'Solicitante': 'Estagiário C', 'Demanda': 'Teste indevido.', 'Status': 'Descartado', 'Devolutiva': ''}
+            ];
+            const aviso = document.createElement("div");
+            aviso.className = "col-span-full bg-yellow-100 text-yellow-800 p-4 rounded-lg text-center shadow-sm border-l-4 border-yellow-500 mb-4 text-sm";
+            aviso.innerHTML = `<strong>Demonstração Ativa:</strong> Como não foi possível acessar a planilha real, estamos mostrando dados de teste. As abas funcionam de mentirinha.`;
+            document.getElementById("grid-chamados").prepend(aviso);
+            desenharTela();
+        }
+    </script>
+</body>
+</html>
